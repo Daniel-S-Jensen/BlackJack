@@ -1,0 +1,7 @@
+dealerUser,dealerPass,D1
+dealerTest,dealerPass,D2
+dealerUsername,dealerPassword,D3
+username,password,P4
+user,pass,P5
+playerUser,playerPass,P6
+Goodbye,Hello,P7

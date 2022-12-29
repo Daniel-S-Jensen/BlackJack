@@ -11,8 +11,6 @@ public class Table {
 	static final private int Max_Players = 5;
 	static private int count = 0;
 	private int id;
-	private Boolean dealerAssigned;
-	private Dealer dealer;
 	private int playerCount;
 	private Player[] players;
 	private Boolean full;
@@ -28,7 +26,6 @@ public class Table {
 	//constructor
 	public Table() {
 		this.id = ++count;
-		this.dealerAssigned = false;
 		this.players = new Player[Max_Players];
 		this.playerCount = 0;
 		this.clientList = new ArrayList<Socket>();
@@ -47,14 +44,6 @@ public class Table {
 		if(this.playerCount == Max_Players) {
 			this.full = true;
 		}
-	}
-	
-	//adds a player to this table
-	public void addDealer(User user, Socket socket) {
-		this.dealer = (Dealer) user;
-		dealerAssigned = true;
-		this.clientList.add(socket);
-		this.deck = this.dealer.getDeck();
 	}
 	
 	private void updateClients(Socket socket, Message message) {
@@ -93,10 +82,6 @@ public class Table {
 
 	public void setFull(Boolean full) {
 		this.full = full;
-	}
-	
-	public Dealer getDealer() {
-		return this.dealer;
 	}
 	
 	public Deck getDeck() {

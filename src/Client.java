@@ -6,25 +6,24 @@ public class Client {
 
 	private static User activeUser = new User();
 	private static Player activePlayer = new Player();
-	private static Dealer activeDealer = new Dealer();
 	private final static String ClientError = "Error. Logging out. Please login again and retry.";
 
 	//client driver
-	public static void main(String[] args) {
+	private static void main(String[] args) {
 
 		try (Socket socket = new Socket("localhost", 7777)) {
 
-			//startup screen
+			//creates scanner
 			Scanner sc = new Scanner(System.in);
-
+			
 			//controls menu so startup shows after logout
 			Boolean programRunning = true;
 			while (programRunning) {
 
-				//startup menu
+				//main menu
 				Boolean loggedIn = false;
 				Boolean signedUp = false;
-				while (loggedIn == false && signedUp == false) {
+				while (!loggedIn && !signedUp) {
 					Boolean menuChoiceSelected = false;
 					while (!menuChoiceSelected) {
 						System.out.println("What would you like to do?");
@@ -33,6 +32,7 @@ public class Client {
 						System.out.println("0. Exit");
 
 						char menuChoice = sc.nextLine().charAt(0);
+
 						switch (menuChoice) {
 						case '1':	//login
 							menuChoiceSelected = true;
@@ -65,62 +65,35 @@ public class Client {
 				while (!loggedOut) {
 					Boolean menuChoiceSelected = false;
 					while (!menuChoiceSelected) {
-						if (activeUser.getUserType() == UserType.dealer) {
-							System.out.println("What would you like to do?");
-							System.out.println("1. Join table.");
-							System.out.println("0. Logout");
-							char menuChoice = sc.nextLine().charAt(0);
-							switch (menuChoice) {
-							case '1':	//Dealer joins table
-								menuChoiceSelected = true;
-								Boolean inGame = true;
-								while (inGame) {
-									//user attempts to login
-									inGame = playGame(socket);
-								}
-								break;
-							case '0':	//Dealer logs out
-								menuChoiceSelected = true;
-								loggedOut = logOut(socket);
-								break;
-							default:	
+						System.out.println("What would you like to do?");
+						System.out.println("1. Play game.");
+						System.out.println("2. Manage balance.");
+						System.out.println("0. Logout");
+						char menuChoice = sc.nextLine().charAt(0);
+						switch (menuChoice) {
+						case '1':	//play game
+							menuChoiceSelected = true;
+							Boolean inGame = true;
+							while (inGame) {
+								//user attempts to login
+								inGame = playGame(socket);
 							}
-						}
-						else if(activeUser.getUserType() == UserType.player) {
-							System.out.println("What would you like to do?");
-							System.out.println("1. Start game.");
-							System.out.println("2. Manage balance.");
-							System.out.println("0. Logout");
-							char menuChoice = sc.nextLine().charAt(0);
-							switch (menuChoice) {
-							case '1':	//join game
-								menuChoiceSelected = true;
-								Boolean inGame = true;
-								while (inGame) {
-									//user attempts to login
-									inGame = playGame(socket);
-								}
-								break;
-							case '2': //manage balance - handles both deposit and withdraw
-								menuChoiceSelected = true;
-								Boolean balanceManaged = false;
-								while (!balanceManaged) {
-									balanceManaged = manageBalance(socket);
-								}
+							break;
+						case '2': //manage balance - handles both deposit and withdraw
+							menuChoiceSelected = true;
+							Boolean balanceManaged = false;
+							while (!balanceManaged) {
+								balanceManaged = manageBalance(socket);
+							}
 
-							case '0':	//User logs out
-								menuChoiceSelected = true;
-								loggedOut = logOut(socket);
-								break;
-							default:	
-							}
-						}
-						else {
-							System.out.println(ClientError);
-							loggedOut = true;
+						case '0':	//User logs out
+							menuChoiceSelected = true;
+							loggedOut = logOut(socket);
+							break;
+						default:	
 						}
 					}
-				}	
+				}
 			}
 		}
 		catch (IOException e) {
@@ -128,13 +101,12 @@ public class Client {
 		}
 	}
 
-	//sends a message to server
+	//sends message to server
 	private static void sendMessage(Socket socket, Message message) {
 		try {
 			List<Message> messages = new ArrayList<>();
 			OutputStream outputStream = socket.getOutputStream();
 			ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
-
 			messages.add(message);
 			objectOutputStream.writeObject(messages);
 		}
@@ -143,17 +115,16 @@ public class Client {
 		}
 	}
 
+	//logs user into account
 	private static Boolean login(Socket socket) {
-
 		Boolean loggedIn = false;
 		Scanner sc = new Scanner(System.in);
 
 		while(!loggedIn) {
-
 			//get login info
-			System.out.print("Enter username <username>: ");
+			System.out.print("Enter username: ");
 			String username = sc.nextLine();
-			System.out.print("Enter password <password>: ");
+			System.out.print("Enter password: ");
 			String password = sc.nextLine();
 
 			//create login message
@@ -164,12 +135,10 @@ public class Client {
 			//send login message
 			sendMessage(socket, loginMessage);
 
+			//receives server response and validates login status
 			Boolean messageReceived = false;
-
-			//receive server response and validate login status
-			try {
-				while (!messageReceived) {
-					//receive server response
+			try{
+				while(!messageReceived) {
 					InputStream inputStream = socket.getInputStream();
 					ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
 					List<Message> listOfReceivedMessages = (List<Message>) objectInputStream.readObject();
@@ -182,27 +151,26 @@ public class Client {
 							}
 							messageReceived = true;
 						}
-					}	
+					}
 				}
 			}
 			catch (IOException | ClassNotFoundException e) {
 				e.printStackTrace();
 			}
 			if (!loggedIn) {
-				System.out.println("Login failure: Please make sure username and passowrd are correct.");
+				System.out.println("Login failure: Please make sure username and password are correct.");
 			}
 		}
 		sc.close();
 		return loggedIn;
 	}
 
+	//signs user up for new account
 	private static Boolean signUp(Socket socket) {
-
 		Boolean signedUp = false;
 		Scanner sc = new Scanner(System.in);
 
 		while(!signedUp) {
-
 			//get signup info
 			System.out.print("Enter desired username <username>: ");
 			String username = sc.nextLine();
@@ -220,10 +188,9 @@ public class Client {
 			//send login message
 			sendMessage(socket, signUpMessage);
 
-			Boolean messageReceived = false;
-
 			//receive server response and validate login status
 			try {
+				Boolean messageReceived = false;
 				while (!messageReceived) {
 					//receive server response
 					InputStream inputStream = socket.getInputStream();
@@ -234,19 +201,16 @@ public class Client {
 						if (receivedMessage.getType() == MessageType.signup) {
 							if(receivedMessage.getStatus() == MessageStatus.success) {
 								signedUp = true;
-								if (receivedMessage.getUser().getUserType() == UserType.dealer) {
-									activeDealer = (Dealer) receivedMessage.getUser();
-									activeUser = receivedMessage.getUser();
-								}
-								else {
-									activePlayer = (Player) receivedMessage.getUser();
-									activeUser = receivedMessage.getUser();
-								}
+								activePlayer = (Player) receivedMessage.getUser();
+								activeUser = receivedMessage.getUser();
 							}
-							messageReceived = true;
+							else{
+								//TODO: add check for is username exists already
+							}
 						}
-					}	
-				}
+						messageReceived = true;
+					}
+				}	
 			}
 			catch (IOException | ClassNotFoundException e) {
 				e.printStackTrace();
@@ -259,181 +223,8 @@ public class Client {
 		return signedUp;
 	}
 
-	private static Boolean manageBalance(Socket socket) {
-		Boolean balanceManaged = false;
-		Scanner sc = new Scanner(System.in);
-		int amount = 0;
-
-		while(!balanceManaged) {
-			Boolean menuChoiceSelected = false;
-			while (!menuChoiceSelected) {
-				System.out.println("What would you like to do?");
-				System.out.println("1. Add funds.");
-				System.out.println("2. Withdraw funds");
-				System.out.println("0. Return to menu;");
-				char menuChoice = sc.nextLine().charAt(0);
-				amount = 0;
-				switch (menuChoice) {
-				case '1':	//join game
-					menuChoiceSelected = true;
-					System.out.println("Withdraw funds");
-					System.out.println("How much would you like to add: $");
-					amount = sc.nextInt();
-					break;
-				case '2': //manage balance
-					menuChoiceSelected = true;
-					System.out.println("Withdraw funds");
-					System.out.println("How much would you like to withdraw: $");
-					amount = sc.nextInt();
-					amount *= -1;
-					break;
-				case '0':
-					menuChoiceSelected = true;
-					balanceManaged = true;
-					break;
-				default:	
-				}
-			}
-			while (amount != 0) {
-
-				//create update message
-				Message balanceUpdateMessage = new Message(MessageType.transaction);
-				balanceUpdateMessage.setUser(activeUser);
-				balanceUpdateMessage.setValue(amount);
-
-				//send login message
-				sendMessage(socket, balanceUpdateMessage);
-
-				Boolean messageReceived = false;
-				Boolean balanceUpdated = false;
-
-				//receive server response and validate login status
-				try {
-					while (!messageReceived) {
-						//receive server response
-						InputStream inputStream = socket.getInputStream();
-						ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
-						List<Message> listOfReceivedMessages = (List<Message>) objectInputStream.readObject();
-						if (listOfReceivedMessages.size() > 0) {
-							Message receivedMessage = listOfReceivedMessages.get(0);
-							if (receivedMessage.getType() == MessageType.transaction) {
-								if(receivedMessage.getStatus() == MessageStatus.success) {
-									balanceUpdated = true;
-									activeUser = receivedMessage.getUser();
-								}
-								messageReceived = true;
-							}
-						}	
-					}
-				}
-				catch (IOException | ClassNotFoundException e) {
-					e.printStackTrace();
-				}
-				if (!balanceUpdated) {
-					System.out.println("Transaction not completed: Please try again.");
-				}
-			}
-		}
-		return balanceManaged;
-	}
-
-
-	private static Boolean logOut(Socket socket) {
-
-		Boolean loggedOut = false;
-
-
-		//create update message
-		Message logoutMessage = new Message(MessageType.logout);
-		logoutMessage.setUser(activeUser);
-
-
-		//send login message
-		sendMessage(socket, logoutMessage);
-
-		Boolean messageReceived = false;
-
-		//receive server response and validate login status
-		try {
-			while (!messageReceived) {
-				//receive server response
-				InputStream inputStream = socket.getInputStream();
-				ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
-				List<Message> listOfReceivedMessages = (List<Message>) objectInputStream.readObject();
-				if (listOfReceivedMessages.size() > 0) {
-					Message receivedMessage = listOfReceivedMessages.get(0);
-					if (receivedMessage.getType() == MessageType.logout) {
-						if(receivedMessage.getStatus() == MessageStatus.success) {
-							loggedOut = true;
-						}
-						messageReceived = true;
-					}
-				}	
-			}
-		}
-		catch (IOException | ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-		if (!loggedOut) {
-			System.out.println("Logout not completed: Please try again.");
-		}
-		return loggedOut;
-	}
-
+	//
 	private static Boolean playGame(Socket socket) {
-		Boolean inGame = true;
-		while(inGame) {
-			if(activeUser.getUserType() == UserType.dealer) {
-				inGame = dealerGame(socket);
-			}
-			else {
-				inGame = playerGame(socket);
-			}
-		}
-		return inGame;
-	}
-
-	private static Boolean dealerGame(Socket socket) {
-		Boolean inGame = true;
-		while(inGame) {
-			//create message
-			Message joinGameMessage = new Message(MessageType.joinTable);
-			joinGameMessage.setUser(activeUser);
-			
-			Boolean messageReceived = false;
-			try {
-				while (!messageReceived) {
-					//receive server response
-					InputStream inputStream = socket.getInputStream();
-					ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
-					List<Message> listOfReceivedMessages = (List<Message>) objectInputStream.readObject();
-					if (listOfReceivedMessages.size() > 0) {
-						Message receivedMessage = listOfReceivedMessages.get(0);
-						if (receivedMessage.getType() == MessageType.joinTable) {
-							if(receivedMessage.getStatus() == MessageStatus.success) {
-								activeUser = receivedMessage.getUser();
-								Boolean dealAgain = true;
-								while (dealAgain) {
-									dealAgain = dealGame(socket, receivedMessage.getTable());
-								}
-							}
-							else if(receivedMessage.getStatus() == MessageStatus.failure) {
-								System.out.println("Error joining game. Please try again.");
-							}
-							inGame = false;
-							messageReceived = true;
-						}
-					}	
-				}
-			}
-			catch (IOException | ClassNotFoundException e) {
-				e.printStackTrace();
-			}
-		}
-		return inGame;
-	}
-
-	private static Boolean playerGame(Socket socket) {
 		Scanner sc = new Scanner(System.in);
 		Boolean inGame = true;
 		while(inGame) {
@@ -465,6 +256,7 @@ public class Client {
 		return inGame;
 	}
 
+	//
 	private static void singlePlayerGame(Socket socket) {
 		//create message
 		Message joinGameMessage = new Message(MessageType.joinTable);
@@ -474,8 +266,8 @@ public class Client {
 		//send join game message
 		sendMessage(socket, joinGameMessage);
 		
-		Boolean messageReceived = false;
 		try {
+			Boolean messageReceived = false;
 			while (!messageReceived) {
 				//receive server response
 				InputStream inputStream = socket.getInputStream();
@@ -504,6 +296,7 @@ public class Client {
 		}
 	}
 	
+	//
 	private static void multiPlayerGame(Socket socket) {
 		//create message
 		Message joinGameMessage = new Message(MessageType.joinTable);
@@ -515,8 +308,8 @@ public class Client {
 		
 		Boolean gameJoined = false;
 		while (!gameJoined) {
-			Boolean messageReceived = false;
 			try {
+				Boolean messageReceived = false;
 				while (!messageReceived) {
 					//receive server response
 					InputStream inputStream = socket.getInputStream();
@@ -565,211 +358,122 @@ public class Client {
 		}
 	}
 
-	private static Boolean playGame(Socket socket, Table table) {
-		Boolean playAgain = false;
+	//
+	private static Boolean manageBalance(Socket socket) {
+		Boolean balanceManaged = false;
 		Scanner sc = new Scanner(System.in);
-		Boolean gameOver = false;
-		while (!gameOver) {
-			try {
-				Boolean messageReceived = false;
-				while (!messageReceived) {
-					//receive server response
-					InputStream inputStream = socket.getInputStream();
-					ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
-					List<Message> listOfReceivedMessages = (List<Message>) objectInputStream.readObject();
-					if (listOfReceivedMessages.size() > 0) {
-						Message receivedMessage = listOfReceivedMessages.get(0);
-						//users turn
-						if(receivedMessage.getUser() == activeUser) {
-							Message message = receivedMessage;
-							if(receivedMessage.getTurn() == true) {
-								//server requesting bet amount
-								if (receivedMessage.getType() == MessageType.requestBet) {
-									Boolean menuChoiceSelected = false;
-									while (!menuChoiceSelected) {
-										System.out.println("How much would you like bet ($1 increments): $");
-										int bet = sc.nextInt();
-										if (bet >= 1) {
-											menuChoiceSelected = true;
-											activePlayer.setBet(bet);
-										}
-									}
-									message.setValue(activePlayer.getBet());
-								}
-								else if (receivedMessage.getType() == MessageType.requestGameAction) {
-									Boolean menuChoiceSelected = false;
-									while (!menuChoiceSelected) {
-										System.out.println("Would you like to 1. Hit or 2. Stand? <1/2>: ");
-										char menuChoice = sc.nextLine().charAt(0);
-										if (menuChoice == '1') {
-											activePlayer.hit();
-											menuChoiceSelected = true;
-											message.setValue(1);
-										}
-										else if (menuChoice == '2') {
-											activePlayer.stand();
-											menuChoiceSelected = true;
-											message.setValue(2);
-										}
-									}
-									message.setUser(activeUser);
-								}
-							}
-							sendMessage(socket, message);
-						}
-						else if (receivedMessage.getType() == MessageType.update) {
-							//update game display
-							for (int i = 0; i <= receivedMessage.getTable().getPlayerCount(); i++) {
-								if (i == 0) {
-									System.out.println(receivedMessage.getTable().getDealer().getName() + " has: " + receivedMessage.getTable().getDealer().getHand().toString());
-								}
-								else {
-									System.out.println(receivedMessage.getTable().getPlayers()[i-1].getName() + " has: " + receivedMessage.getTable().getDealer().getHand().toString());
-								}
-							}
-						}
-						else if (receivedMessage.getType() == MessageType.gameOver) {
-							gameOver = true;
-						}
-					}	
-					messageReceived = true;
+		int amount = 0;
+
+		while(!balanceManaged) {
+			Boolean menuChoiceSelected = false;
+			while (!menuChoiceSelected) {
+				System.out.println("What would you like to do?");
+				System.out.println("1. Add funds.");
+				System.out.println("2. Withdraw funds");
+				System.out.println("0. Return to menu;");
+				char menuChoice = sc.nextLine().charAt(0);
+				amount = 0;
+				switch (menuChoice) {
+				case '1':	//join game
+					menuChoiceSelected = true;
+					System.out.println("Add funds");
+					System.out.println("How much would you like to add: $");
+					amount = sc.nextInt();
+					break;
+				case '2': //manage balance
+					menuChoiceSelected = true;
+					System.out.println("Withdraw funds");
+					System.out.println("How much would you like to withdraw: $");
+					amount = sc.nextInt();
+					amount *= -1;
+					break;
+				case '0':
+					menuChoiceSelected = true;
+					balanceManaged = true;
+					break;
+				default:	
 				}
 			}
-			catch (IOException | ClassNotFoundException e) {
-				e.printStackTrace();
-			}
-		}
-		Boolean menuChoiceSelected = false;
-		while (!menuChoiceSelected) {
-			System.out.println("Would you like to play again:");
-			System.out.println("1. Yes");
-			System.out.println("2. No");
-			char menuChoice = sc.nextLine().charAt(0);
-			if (menuChoice == '1') {
-				playAgain = true;
-				menuChoiceSelected = true;
-			}
-			else if (menuChoice == '2') {
-				playAgain = false;
-				menuChoiceSelected = true;
-			}
-		}
-		return playAgain;
-	}
-	
-	private static Boolean dealGame(Socket socket, Table table) {
-		Boolean playAgain = false;
-		Scanner sc = new Scanner(System.in);
-		Boolean gameOver = false;
-		while (!gameOver) {
-			try {
-				Boolean messageReceived = false;
-				while (!messageReceived) {
-					//receive server response
-					InputStream inputStream = socket.getInputStream();
-					ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
-					List<Message> listOfReceivedMessages = (List<Message>) objectInputStream.readObject();
-					if (listOfReceivedMessages.size() > 0) {
-						Message receivedMessage = listOfReceivedMessages.get(0);
-						//users turn
-						if(receivedMessage.getUser() == activeUser) {
-							Message message = receivedMessage;
-							if(receivedMessage.getTurn() == true) {
-								if (receivedMessage.getType() == MessageType.requestGameAction) {
-									Boolean menuChoiceSelected = false;
-									while (!menuChoiceSelected) {
-										System.out.println("Would you like to 1. Hit or 2. Stand? <1/2>: ");
-										char menuChoice = sc.nextLine().charAt(0);
-										if (menuChoice == '1') {
-											activePlayer.hit();
-											menuChoiceSelected = true;
-										}
-										else if (menuChoice == '2') {
-											activePlayer.stand();
-											menuChoiceSelected = true;
-										}
-									}
+			while (amount != 0) {
+
+				//create update message
+				Message balanceUpdateMessage = new Message(MessageType.transaction);
+				balanceUpdateMessage.setUser(activeUser);
+				balanceUpdateMessage.setValue(amount);
+
+				//send login message
+				sendMessage(socket, balanceUpdateMessage);
+
+				Boolean balanceUpdated = false;
+
+				//receive server response and validate login status
+				try {
+					Boolean messageReceived = false;
+					while (!messageReceived) {
+						//receive server response
+						InputStream inputStream = socket.getInputStream();
+						ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
+						List<Message> listOfReceivedMessages = (List<Message>) objectInputStream.readObject();
+						if (listOfReceivedMessages.size() > 0) {
+							Message receivedMessage = listOfReceivedMessages.get(0);
+							if (receivedMessage.getType() == MessageType.transaction) {
+								if(receivedMessage.getStatus() == MessageStatus.success) {
+									balanceUpdated = true;
+									activeUser = receivedMessage.getUser();
 								}
-								else if (receivedMessage.getType() == MessageType.hitRequest) {
-									System.out.println(receivedMessage.name +" has requested to hit. Press enter to hit player.");
-									sc.nextLine();
-									message.setStatus(MessageStatus.success);
-								}
-								else if (receivedMessage.getType() == MessageType.dealRequest) {
-									System.out.println("Game is starting. Press enter to deal cards.");
-									sc.nextLine();
-									message.setStatus(MessageStatus.success);
-								}
-								else if (receivedMessage.getType() == MessageType.betRequest) {
-									System.out.println(receivedMessage.name +" has requested to bet $" + receivedMessage.getValue() + ". Press enter to confirm.");
-									sc.nextLine();
-									message.setStatus(MessageStatus.success);
-								}
-								else if (receivedMessage.getType() == MessageType.endGame) {
-									System.out.println("All hands are standing or have busted. Press enter to move to payout phase.");
-									sc.nextLine();
-									message.setStatus(MessageStatus.success);
-								}
-								else if (receivedMessage.getType() == MessageType.payoutRequest) {
-									System.out.println(receivedMessage.name +" will be receive $" + receivedMessage.getValue() + ". Press enter to confirm.");
-									sc.nextLine();
-									message.setStatus(MessageStatus.success);
-								}
-								
+								messageReceived = true;
 							}
-							sendMessage(socket, message);
-						}
-						else if (receivedMessage.getType() == MessageType.update) {
-							//update game display
-							for (int i = 0; i <= receivedMessage.getTable().getPlayerCount(); i++) {
-								if (i == 0) {
-									System.out.println(receivedMessage.getTable().getDealer().getName() + " has: " + receivedMessage.getTable().getDealer().getHand().toString());
-								}
-								else {
-									System.out.println(receivedMessage.getTable().getPlayers()[i-1].getName() + " has: " + receivedMessage.getTable().getDealer().getHand().toString());
-								}
-							}
-						}
-						else if (receivedMessage.getType() == MessageType.gameOver) {
-							if(receivedMessage.getValue() > 0) {
-								System.out.println("Players remaining");
-								gameOver = true;
-							}
-							else {
-								System.out.println("No players remaining");
-								gameOver = true;
-							}
-						}
-					}	
-					messageReceived = true;
+						}	
+					}
+				}
+				catch (IOException | ClassNotFoundException e) {
+					e.printStackTrace();
+				}
+				if (!balanceUpdated) {
+					System.out.println("Transaction not completed: Please try again.");
 				}
 			}
-			catch (IOException | ClassNotFoundException e) {
-				e.printStackTrace();
-			}
 		}
-		Boolean menuChoiceSelected = false;
-		while (!menuChoiceSelected) {
-			System.out.println("Would you like to play again:");
-			System.out.println("1. Yes");
-			System.out.println("2. No");
-			char menuChoice = sc.nextLine().charAt(0);
-			if (menuChoice == '1') {
-				playAgain = true;
-				menuChoiceSelected = true;
-			}
-			else if (menuChoice == '2') {
-				playAgain = false;
-				menuChoiceSelected = true;
-			}
-		}
-		return playAgain;
+		return balanceManaged;
 	}
-	
-	
-	
-	
-	
-	
-	
+
+	//logs user out
+	private static Boolean logOut(Socket socket) {
+		Boolean loggedOut = false;
+
+		//create update message
+		Message logoutMessage = new Message(MessageType.logout);
+		logoutMessage.setUser(activeUser);
+
+		//send login message
+		sendMessage(socket, logoutMessage);
+
+		//receive server response and validate login status
+		try {
+			Boolean messageReceived = false;
+			while (!messageReceived) {
+				//receive server response
+				InputStream inputStream = socket.getInputStream();
+				ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
+				List<Message> listOfReceivedMessages = (List<Message>) objectInputStream.readObject();
+				if (listOfReceivedMessages.size() > 0) {
+					Message receivedMessage = listOfReceivedMessages.get(0);
+					if (receivedMessage.getType() == MessageType.logout) {
+						if(receivedMessage.getStatus() == MessageStatus.success) {
+							loggedOut = true;
+						}
+						messageReceived = true;
+					}
+				}	
+			}
+		}
+		catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		if (!loggedOut) {
+			System.out.println("Logout not completed: Please try again.");
+		}
+		return loggedOut;
+	}
+
 }

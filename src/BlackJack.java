@@ -9,6 +9,7 @@ public class BlackJack {
 		Boolean loggedIn = false;
 		Boolean signedUp = false;
 
+		Boolean menuChoiceSelected = false;
 
 		//
 		while (!menuChoiceSelected) {

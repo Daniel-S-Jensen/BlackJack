@@ -13,6 +13,10 @@ public class Message implements Serializable {
 	protected Player player;
 
 	//constructors
+	public Message() {
+		this.status = MessageStatus.undefined;
+	}
+
 	public Message(MessageType type) {
 		this.type = type;
 		this.status = MessageStatus.undefined;

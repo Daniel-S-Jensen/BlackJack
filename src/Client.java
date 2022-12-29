@@ -253,6 +253,7 @@ public class Client {
 				}
 			}
 		}
+		sc.close();
 		return inGame;
 	}
 
@@ -448,6 +449,11 @@ public class Client {
 		//send login message
 		sendMessage(socket, logoutMessage);
 
+		Message receivedMessage = receiveMessage(socket);
+		if (receivedMessage.getType() == MessageType.logout && receivedMessage.getStatus() == MessageStatus.success) {
+			loggedOut = true;
+		}
+		/*
 		//receive server response and validate login status
 		try {
 			Boolean messageReceived = false;
@@ -458,22 +464,138 @@ public class Client {
 				List<Message> listOfReceivedMessages = (List<Message>) objectInputStream.readObject();
 				if (listOfReceivedMessages.size() > 0) {
 					Message receivedMessage = listOfReceivedMessages.get(0);
-					if (receivedMessage.getType() == MessageType.logout) {
-						if(receivedMessage.getStatus() == MessageStatus.success) {
-							loggedOut = true;
-						}
-						messageReceived = true;
+					if (receivedMessage.getType() == MessageType.logout && receivedMessage.getStatus() == MessageStatus.success) {
+						loggedOut = true;
 					}
+					messageReceived = true;
 				}	
 			}
 		}
 		catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
+		*/
 		if (!loggedOut) {
 			System.out.println("Logout not completed: Please try again.");
 		}
 		return loggedOut;
 	}
 
+	//
+	private static Message receiveMessage(Socket socket) {
+		//receive server response
+		try {
+			Message receivedMessage = new Message();
+			Boolean messageReceived = false;
+			while (!messageReceived) {
+				InputStream inputStream = socket.getInputStream();
+				ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
+				List<Message> listOfReceivedMessages = (List<Message>) objectInputStream.readObject();
+				if (listOfReceivedMessages.size() > 0) {
+					receivedMessage = listOfReceivedMessages.get(0);
+					messageReceived = true;
+				}
+			}
+			return receivedMessage;
+		}
+		catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+
+	//
+	/*
+	private static Boolean playGame(Socket socket, Table table) {
+		
+		Boolean playAgain = false;
+		Scanner sc = new Scanner(System.in);
+		Boolean gameOver = false;
+		while (!gameOver) {
+			try {
+				Boolean messageReceived = false;
+				while (!messageReceived) {
+					//receive server response
+					InputStream inputStream = socket.getInputStream();
+					ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
+					List<Message> listOfReceivedMessages = (List<Message>) objectInputStream.readObject();
+					if (listOfReceivedMessages.size() > 0) {
+						Message receivedMessage = listOfReceivedMessages.get(0);
+						//users turn
+						if(receivedMessage.getUser() == activeUser) {
+							Message message = receivedMessage;
+							if(receivedMessage.getTurn() == true) {
+								//server requesting bet amount
+								if (receivedMessage.getType() == MessageType.requestBet) {
+									Boolean menuChoiceSelected = false;
+									while (!menuChoiceSelected) {
+										System.out.println("How much would you like bet ($1 increments): $");
+										int bet = sc.nextInt();
+										if (bet >= 1) {
+											menuChoiceSelected = true;
+											activePlayer.setBet(bet);
+										}
+									}
+									message.setValue(activePlayer.getBet());
+								}
+								else if (receivedMessage.getType() == MessageType.requestGameAction) {
+									Boolean menuChoiceSelected = false;
+									while (!menuChoiceSelected) {
+										System.out.println("Would you like to 1. Hit or 2. Stand? <1/2>: ");
+										char menuChoice = sc.nextLine().charAt(0);
+										if (menuChoice == '1') {
+											activePlayer.hit();
+											menuChoiceSelected = true;
+											message.setValue(1);
+										}
+										else if (menuChoice == '2') {
+											activePlayer.stand();
+											menuChoiceSelected = true;
+											message.setValue(2);
+										}
+									}
+									message.setUser(activeUser);
+								}
+							}
+							sendMessage(socket, message);
+						}
+						else if (receivedMessage.getType() == MessageType.update) {
+							//update game display
+							for (int i = 0; i <= receivedMessage.getTable().getPlayerCount(); i++) {
+								if (i == 0) {
+									System.out.println(receivedMessage.getTable().getDealer().getName() + " has: " + receivedMessage.getTable().getDealer().getHand().toString());
+								}
+								else {
+									System.out.println(receivedMessage.getTable().getPlayers()[i-1].getName() + " has: " + receivedMessage.getTable().getDealer().getHand().toString());
+								}
+							}
+						}
+						else if (receivedMessage.getType() == MessageType.gameOver) {
+							gameOver = true;
+						}
+					}	
+					messageReceived = true;
+				}
+			}
+			catch (IOException | ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+		Boolean menuChoiceSelected = false;
+		while (!menuChoiceSelected) {
+			System.out.println("Would you like to play again:");
+			System.out.println("1. Yes");
+			System.out.println("2. No");
+			char menuChoice = sc.nextLine().charAt(0);
+			if (menuChoice == '1') {
+				playAgain = true;
+				menuChoiceSelected = true;
+			}
+			else if (menuChoice == '2') {
+				playAgain = false;
+				menuChoiceSelected = true;
+			}
+		}
+		return playAgain;
+	}
+	*/
 }
